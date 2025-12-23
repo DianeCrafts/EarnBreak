@@ -1,0 +1,24 @@
+# --- Core API ---
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+pydantic==2.6.1
+
+# --- Async / streaming ---
+websockets==12.0
+
+# --- System activity & input monitoring ---
+pynput==1.7.6          # keyboard & mouse hooks
+psutil==5.9.8          # system + process stats
+
+# --- Window / app detection ---
+pygetwindow==0.0.9     # active window (Win/macOS)
+pywin32==306           # Windows only (safe to include)
+# macOS users will ignore pywin32 automatically
+
+# --- Time series & math ---
+numpy==1.26.4
+
+# --- Logging & config ---
+python-dotenv==1.0.1
+loguru==0.7.2
+

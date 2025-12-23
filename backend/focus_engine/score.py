@@ -2,7 +2,7 @@ def clamp(x):
     return max(0.0, min(1.0, x))
 
 
-def compute_focus(input_f, window_f, fake_reasons, browser_intent, ctx_state):
+def compute_focus(input_f, window_f, fake_reasons, browser_intent, ctx_state, camera):
 
     score = 1.0
     reasons = []
@@ -59,6 +59,36 @@ def compute_focus(input_f, window_f, fake_reasons, browser_intent, ctx_state):
         elif rate <= 0.3 and ctx_state.drift_events_5m >= 1:
             score -= 0.15
             reasons.append("Switching often leads to drift")
+
+            # =========================
+        # Camera fusion (v1)
+        # =========================
+
+        # ---- Idle ambiguity resolution ----
+        if input_f.idle_ratio > 0.6:
+            if camera.face_present < 0.3:
+                score -= 0.35
+                reasons.append("Away from desk (no face detected)")
+            else:
+                score -= 0.10
+                reasons.append("Low interaction (likely reading/thinking)")
+
+        # ---- Doomscroll confirmation ----
+        if browser_intent.doomscroll_prob >= 0.6:
+            if camera.gaze_on_screen < 0.3:
+                score -= 0.20
+                reasons.append("Attention away during passive media")
+            else:
+                # Gaze confirms intentional watching
+                score -= 0.05
+                reasons.append("Passive media, but attention engaged")
+
+        # ---- Fatigue awareness (NO penalty) ----
+        if camera.yawn_prob > 0.7:
+            reasons.append("Signs of fatigue detected")
+        elif camera.blink_rate_60s > 18:
+            reasons.append("High blink rate (possible eye fatigue)")
+
 
 
     return clamp(score), reasons

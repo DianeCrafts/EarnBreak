@@ -137,7 +137,7 @@ async def ws_endpoint(ws: WebSocket):
             cam = camera_collector.snapshot()
 
             fake_reasons = detect_fake_focus(input_f, window_f)
-            focus, reasons = compute_focus(input_f, window_f, fake_reasons, browser_intent, ctx_state)
+            focus, reasons = compute_focus(input_f, window_f, fake_reasons, browser_intent, ctx_state, cam)
             speed = score_to_speed(focus)
 
             # Credits accumulate faster/slower based on speed

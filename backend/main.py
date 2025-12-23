@@ -8,6 +8,12 @@ from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from collectors.input_collector import InputCollector
+from collectors.window_collector import WindowCollector
+
+input_collector = InputCollector()
+window_collector = WindowCollector()
+input_collector.start()
 app = FastAPI()
 
 # For Vue dev server (Vite).
@@ -72,6 +78,8 @@ async def ws_endpoint(ws: WebSocket):
 
     try:
         while True:
+            inp = input_collector.snapshot_and_reset()
+            win = window_collector.snapshot()
             # Dummy focus for now
             focus = max(0.0, min(1.0, random.gauss(mu=0.55, sigma=0.20)))
             speed = score_to_speed(focus)

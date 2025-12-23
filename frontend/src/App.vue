@@ -45,6 +45,8 @@ const progressPct = computed(() => {
           <li v-for="r in state.reasons" :key="r">{{ r }}</li>
         </ul>
       </div>
+      <p><strong>Context:</strong> {{ state.browser_category }} ({{ state.browser_domain }})</p>
+      <p><strong>Doomscroll:</strong> {{ state.doomscroll_prob }}</p>
 
       <small style="opacity:0.7;">Last update (UTC): {{ state.ts }}</small>
     </div>

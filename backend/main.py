@@ -17,6 +17,8 @@ from fake_detection.patterns import detect_fake_focus
 from focus_engine.score import compute_focus
 from collectors.browser_collector import BrowserCollector
 from pydantic import BaseModel
+from collectors.browser_collector import BrowserCollector
+from features.browser_intent import BrowserIntentEngine
 
 input_fx = InputFeatureExtractor()
 window_fx = WindowFeatureExtractor()
@@ -24,6 +26,7 @@ window_fx = WindowFeatureExtractor()
 input_collector = InputCollector()
 window_collector = WindowCollector()
 browser_collector = BrowserCollector()
+browser_intent_engine = BrowserIntentEngine()
 input_collector.start()
 app = FastAPI()
 
@@ -44,6 +47,10 @@ class LiveState:
     work_credits: float         # accumulates
     credits_target: float       # needed to earn a break
     reasons: List[str]          # explainable feedback
+    browser_domain: str
+    browser_category: str
+    doomscroll_prob: float
+    
 
 
 def score_to_speed(focus: float) -> float:
@@ -76,6 +83,7 @@ WORK_CREDITS = 0.0
 CREDITS_TARGET = 2.0 * 60 * 60  # 2 hours worth of "credits" in seconds (conceptual)
 
 
+
 @app.get("/health")
 def health():
     return {"ok": True, "service": "earn-break-backend"}
@@ -92,15 +100,21 @@ async def ws_endpoint(ws: WebSocket):
             inp = input_collector.snapshot_and_reset()
             win = window_collector.snapshot()
 
-
             input_fx.update(inp)
             window_fx.update(win)
 
             input_f = input_fx.extract()
             window_f = window_fx.extract()
 
+            browser_snap = browser_collector.snapshot()
+
+            # update internal dwell / deltas
+            browser_intent_engine.update(browser_snap)
+
+            browser_intent = browser_intent_engine.infer(browser_snap)
+
             fake_reasons = detect_fake_focus(input_f, window_f)
-            focus, reasons = compute_focus(input_f, window_f, fake_reasons)
+            focus, reasons = compute_focus(input_f, window_f, fake_reasons, browser_intent)
             speed = score_to_speed(focus)
 
             # Credits accumulate faster/slower based on speed
@@ -114,7 +128,11 @@ async def ws_endpoint(ws: WebSocket):
                 time_speed=round(speed, 2),
                 work_credits=round(WORK_CREDITS, 1),
                 credits_target=float(CREDITS_TARGET),
-                reasons=reasons_from_focus(focus),
+                reasons=reasons,
+
+                browser_domain=browser_intent.domain,
+                browser_category=browser_intent.category,
+                doomscroll_prob=round(browser_intent.doomscroll_prob, 2),
             )
 
             await ws.send_text(json.dumps(asdict(state)))

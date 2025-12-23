@@ -5,6 +5,10 @@ export type LiveState = {
   work_credits: number;
   credits_target: number;
   reasons: string[];
+  browser_domain: string,
+  browser_category: string,
+  doomscroll_prob: number
+
 };
 
 export function connectLiveState(onState: (s: LiveState) => void) {

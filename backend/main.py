@@ -15,12 +15,15 @@ from features.input_features import InputFeatureExtractor
 from features.window_features import WindowFeatureExtractor
 from fake_detection.patterns import detect_fake_focus
 from focus_engine.score import compute_focus
+from collectors.browser_collector import BrowserCollector
+from pydantic import BaseModel
 
 input_fx = InputFeatureExtractor()
 window_fx = WindowFeatureExtractor()
 
 input_collector = InputCollector()
 window_collector = WindowCollector()
+browser_collector = BrowserCollector()
 input_collector.start()
 app = FastAPI()
 
@@ -89,6 +92,7 @@ async def ws_endpoint(ws: WebSocket):
             inp = input_collector.snapshot_and_reset()
             win = window_collector.snapshot()
 
+
             input_fx.update(inp)
             window_fx.update(win)
 
@@ -116,5 +120,19 @@ async def ws_endpoint(ws: WebSocket):
             await ws.send_text(json.dumps(asdict(state)))
             await asyncio.sleep(1)
 
+
     except WebSocketDisconnect:
         return
+
+
+
+class BrowserEvent(BaseModel):
+    domain: str
+    title: str
+    scroll_count: int = 0
+    key_count: int = 0
+
+@app.post("/telemetry/browser")
+def browser_telemetry(ev: BrowserEvent):
+    browser_collector.update(ev.domain, ev.title, ev.scroll_count, ev.key_count)
+    return {"ok": True}

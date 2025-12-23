@@ -2,7 +2,8 @@ def clamp(x):
     return max(0.0, min(1.0, x))
 
 
-def compute_focus(input_f, window_f, fake_reasons, browser_intent):
+def compute_focus(input_f, window_f, fake_reasons, browser_intent, ctx_state):
+
     score = 1.0
     reasons = []
 
@@ -42,6 +43,23 @@ def compute_focus(input_f, window_f, fake_reasons, browser_intent):
     if window_f.focus_streak > 30 and browser_intent.doomscroll_prob < 0.3:
         score += 0.2
         reasons.append("Sustained focus without distraction")
+
+    # ---- Task return reward/penalty ----
+    # If you left primary, you have a short window to return (research loop)
+    if ctx_state.support_trip_active and ctx_state.seconds_since_primary > 120:
+        score -= 0.25
+        reasons.append("Away from primary task too long (no return)")
+
+    # Reward high return success rate
+    if ctx_state.support_trips_5m >= 3:
+        rate = ctx_state.successful_returns_5m / max(1, ctx_state.support_trips_5m)
+        if rate >= 0.7:
+            score += 0.15
+            reasons.append("Productive switching (quick returns detected)")
+        elif rate <= 0.3 and ctx_state.drift_events_5m >= 1:
+            score -= 0.15
+            reasons.append("Switching often leads to drift")
+
 
     return clamp(score), reasons
 

@@ -1,15 +1,32 @@
 export type LiveState = {
   ts: string;
+
   focus_score: number;
   time_speed: number;
+
   work_credits: number;
   credits_target: number;
+
   reasons: string[];
-  browser_domain: string,
-  browser_category: string,
-  doomscroll_prob: number
+
+  browser_domain: string;
+  browser_category: string;
+  doomscroll_prob: number;
+
+  primary_context: string;
+  current_context: string;
+  seconds_since_primary: number;
+  support_trips_5m: number;
+  successful_returns_5m: number;
+  drift_events_5m: number;
+  face_present: number;
+  gaze_on_screen: number;
+  head_motion: number;
+  blink_rate_60s: number;
+  yawn_prob: number;
 
 };
+
 
 export function connectLiveState(onState: (s: LiveState) => void) {
   const ws = new WebSocket("ws://localhost:8000/ws");

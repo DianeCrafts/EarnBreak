@@ -35,6 +35,21 @@ task_return_engine = TaskReturnEngine(return_window_sec=120)
 
 input_collector.start()
 app = FastAPI()
+@app.on_event("shutdown")
+def shutdown_event():
+    print("Shutting down collectors...")
+
+    try:
+        camera_collector.stop()
+    except Exception as e:
+        print("Camera stop error:", e)
+
+    try:
+        input_collector.stop()
+    except Exception:
+        pass
+
+    print("Shutdown complete.")
 
 # For Vue dev server (Vite).
 app.add_middleware(
@@ -118,13 +133,13 @@ async def ws_endpoint(ws: WebSocket):
         while True:
             inp = input_collector.snapshot_and_reset()
             win = window_collector.snapshot()
-
+            print(win)
             input_fx.update(inp)
             window_fx.update(win)
 
             input_f = input_fx.extract()
             window_f = window_fx.extract()
-
+            print(window_f)
             browser_snap = browser_collector.snapshot()
 
             # update internal dwell / deltas

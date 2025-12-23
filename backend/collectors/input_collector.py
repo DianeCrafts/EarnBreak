@@ -27,6 +27,14 @@ class InputCollector:
         self.key_listener.start()
         self.mouse_listener.start()
 
+    def stop(self):
+        try:
+            self.key_listener.stop()
+            self.mouse_listener.stop()
+        except Exception:
+            pass
+
+
     def _on_key(self, key):
         with self._lock:
             self.keystrokes += 1

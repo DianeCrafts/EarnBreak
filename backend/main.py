@@ -11,6 +11,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from collectors.input_collector import InputCollector
 from collectors.window_collector import WindowCollector
 
+from features.input_features import InputFeatureExtractor
+from features.window_features import WindowFeatureExtractor
+from fake_detection.patterns import detect_fake_focus
+from focus_engine.score import compute_focus
+
+input_fx = InputFeatureExtractor()
+window_fx = WindowFeatureExtractor()
+
 input_collector = InputCollector()
 window_collector = WindowCollector()
 input_collector.start()
@@ -80,8 +88,15 @@ async def ws_endpoint(ws: WebSocket):
         while True:
             inp = input_collector.snapshot_and_reset()
             win = window_collector.snapshot()
-            # Dummy focus for now
-            focus = max(0.0, min(1.0, random.gauss(mu=0.55, sigma=0.20)))
+
+            input_fx.update(inp)
+            window_fx.update(win)
+
+            input_f = input_fx.extract()
+            window_f = window_fx.extract()
+
+            fake_reasons = detect_fake_focus(input_f, window_f)
+            focus, reasons = compute_focus(input_f, window_f, fake_reasons)
             speed = score_to_speed(focus)
 
             # Credits accumulate faster/slower based on speed

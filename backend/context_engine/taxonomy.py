@@ -1,44 +1,72 @@
-# A small, human-readable taxonomy. You can expand anytime.
 
-APP_KEYWORDS = {
-    "vscode": "work_primary",
-    "pycharm": "work_primary",
-    "intellij": "work_primary",
-    "excel": "work_primary",
-    "powerpoint": "work_primary",
-    "word": "work_primary",
-    "notion": "work_primary",
-    "obsidian": "work_primary",
-    "terminal": "work_primary",
-    "cmd": "work_primary",
-    "powershell": "work_primary",
+APP_PROCESS_MAP = {
+    # Code editors / IDEs
+    "code.exe": "work_primary",
+    "pycharm.exe": "work_primary",
+    "idea.exe": "work_primary",
+    "intellij.exe": "work_primary",
+
+    # Terminals
+    "cmd.exe": "work_primary",
+    "powershell.exe": "work_primary",
+    "wt.exe": "work_primary",
+
+    # Office / writing
+    "excel.exe": "work_primary",
+    "powerpnt.exe": "work_primary",
+    "winword.exe": "work_primary",
+    "notion.exe": "work_primary",
+    "obsidian.exe": "work_primary",
 }
 
-# Browser intent categories are already produced by Step 1:
-# work_support, search, social, passive_media, browser_other, unknown
+# Browser intent categories come from BrowserIntentEngine
 
-def map_to_context(window_title: str, browser_category: str) -> str:
+
+def map_to_context(
+    app: str,
+    window_title: str,
+    browser_category: str,
+    is_browser: bool,
+) -> str:
     """
-    Decide a coarse semantic context for scoring continuity.
-    Priority: explicit app keywords -> browser category -> fallback.
+    Decide semantic context.
+    Priority:
+    1. App process (strongest)
+    2. Browser intent (if browser active)
+    3. Fallback
     """
-    t = (window_title or "").lower()
 
-    for k, ctx in APP_KEYWORDS.items():
-        if k in t:
-            return ctx
+    app = (app or "").lower()
+    title = (window_title or "").lower()
 
-    # Browser category mapping to semantic contexts
+    # -------------------------
+    # Non-browser apps (strong signal)
+    # -------------------------
+    if not is_browser:
+        if app in APP_PROCESS_MAP:
+            return APP_PROCESS_MAP[app]
+
+        # Fallback heuristics
+        if "visual studio code" in title:
+            return "work_primary"
+        if "terminal" in title or "powershell" in title:
+            return "work_primary"
+
+        return "unknown"
+
+    # -------------------------
+    # Browser (only if active)
+    # -------------------------
     if browser_category in ("work_support", "search"):
         return "work_support"
-    if browser_category in ("social",):
+    if browser_category == "social":
         return "social"
-    if browser_category in ("passive_media",):
+    if browser_category == "passive_media":
         return "passive_media"
-    if browser_category in ("browser_other",):
+    if browser_category == "browser_other":
         return "browser_other"
-    return "unknown"
 
+    return "unknown"
 
 # Semantic distance matrix (0 = same, 1 = very different)
 DIST = {
@@ -61,6 +89,12 @@ DIST = {
 
     ("work_support", "passive_media"): 0.9,
     ("passive_media", "work_support"): 0.9,
+
+    ("unknown", "work_primary"): 0.3,
+    ("work_primary", "unknown"): 0.3,
+
+    ("unknown", "passive_media"): 0.8,
+    ("passive_media", "unknown"): 0.8,
 }
 
 def semantic_distance(a: str, b: str) -> float:

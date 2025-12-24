@@ -84,3 +84,16 @@ class BrowserIntentEngine:
             doom = min(doom, 0.1)
 
         return BrowserIntent(domain=domain, category=category, doomscroll_prob=doom, reasons=reasons)
+    
+    def neutral(self) -> BrowserIntent:
+        """
+        Returns a neutral browser intent when the browser
+        is NOT the active foreground window.
+        """
+        return BrowserIntent(
+            domain="",
+            category="non_browser",
+            doomscroll_prob=0.0,
+            reasons=[]
+        )
+

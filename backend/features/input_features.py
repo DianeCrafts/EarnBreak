@@ -23,8 +23,8 @@ class InputFeatureExtractor:
         self.idle.add(min(1.0, snapshot.idle_seconds))
 
     def extract(self) -> InputFeatures:
-        keys_pm = self.keys.mean() * 60
-        mouse_pm = self.mouse.mean() * 60
+        keys_pm = self.keys.mean() 
+        mouse_pm = self.mouse.mean() 
         idle_ratio = self.idle.mean()
 
         # entropy proxy: variance of activity
